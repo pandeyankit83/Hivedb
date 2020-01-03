@@ -37,9 +37,9 @@ class Frame {
         throw HiveError('Integer keys need to be in the range 0 - 0xFFFFFFFF');
       }
     } else if (key is String) {
-      if (key.length > 0xFF || !key.isAscii) {
+      if (key.codeUnits.length * 2 > 0xFF) {
         throw HiveError(
-            'String keys need to be ASCII Strings with a max length of 255');
+            'String keys need to be Strings with a max length of 255');
       }
     } else {
       throw HiveError('Keys need to be Strings or integers');

@@ -207,7 +207,7 @@ class BinaryReaderImpl extends BinaryReader {
       return readUint32();
     } else if (keyType == FrameKeyType.asciiStringT.index) {
       var keyLength = readByte();
-      return String.fromCharCodes(viewBytes(keyLength));
+      return readString(keyLength);
     } else {
       throw HiveError('Unsupported key type. Frame might be corrupted.');
     }

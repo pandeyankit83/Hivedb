@@ -202,7 +202,7 @@ class BinaryWriterImpl extends BinaryWriter {
     if (key is String) {
       writeByte(FrameKeyType.asciiStringT.index);
       writeByte(key.length);
-      writeByteList(key.codeUnits, writeLength: false);
+      writeString(key, writeByteCount: false);
     } else {
       writeByte(FrameKeyType.uintT.index);
       writeUint32(key as int);
