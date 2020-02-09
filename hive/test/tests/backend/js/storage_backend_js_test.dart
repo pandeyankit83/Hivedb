@@ -1,11 +1,10 @@
 @TestOn('browser')
 
 import 'dart:async' show Future;
-import 'dart:html';
-import 'dart:indexed_db';
 import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
+import 'package:hive/src/backend/js/indexed_db.dart';
 import 'package:hive/src/backend/js/storage_backend_js.dart';
 import 'package:hive/src/binary/binary_writer_impl.dart';
 import 'package:hive/src/binary/frame.dart';
@@ -24,24 +23,18 @@ StorageBackendJs _getBackend({
 }
 
 Future<Database> _openDb() async {
-  return await window.indexedDB.open('testBox', version: 1,
-      onUpgradeNeeded: (e) {
-    var db = e.target.result as Database;
-    if (!db.objectStoreNames.contains('box')) {
+  return await openIDB('testBox', (db) {
+    if (!db.hasObjectStore('box')) {
       db.createObjectStore('box');
     }
   });
 }
 
-ObjectStore _getStore(Database db) {
-  return db.transaction('box', 'readwrite').objectStore('box');
-}
-
 Future<Database> _getDbWith(Map<String, dynamic> content) async {
   var db = await _openDb();
-  var store = _getStore(db);
+  var store = db.getStore('box', true);
   await store.clear();
-  content.forEach((k, v) => store.put(v, k));
+  content.forEach((k, v) => store.put(k, v));
   return db;
 }
 
@@ -142,20 +135,6 @@ void main() {
       });
     });
 
-    test('.getKeys()', () async {
-      var db = await _getDbWith({'key1': 1, 'key2': 2, 'key3': 3});
-      var backend = _getBackend(db: db);
-
-      expect(await backend.getKeys(), ['key1', 'key2', 'key3']);
-    });
-
-    test('.getValues()', () async {
-      var db = await _getDbWith({'key1': 1, 'key2': null, 'key3': 3});
-      var backend = _getBackend(db: db);
-
-      expect(await backend.getValues(), [1, null, 3]);
-    });
-
     group('.initialize()', () {
       test('not lazy', () async {
         var db = await _getDbWith({'key1': 1, 'key2': null, 'key3': 3});
@@ -199,10 +178,10 @@ void main() {
       var frames = [Frame('key1', 123), Frame('key2', null)];
       await backend.writeFrames(frames);
       expect(frames, [Frame('key1', 123), Frame('key2', null)]);
-      expect(await backend.getKeys(), ['key1', 'key2']);
+      expect(await backend.getStore(false).getAllKeys(), ['key1', 'key2']);
 
       await backend.writeFrames([Frame.deleted('key1')]);
-      expect(await backend.getKeys(), ['key2']);
+      expect(await backend.getStore(false).getAllKeys(), ['key2']);
     });
 
     test('.compact()', () async {
@@ -218,7 +197,7 @@ void main() {
       var db = await _getDbWith({'key1': 1, 'key2': 2, 'key3': 3});
       var backend = _getBackend(db: db);
       await backend.clear();
-      expect(await backend.getKeys(), []);
+      expect(await backend.getStore(false).getAllKeys(), []);
     });
 
     test('.close()', () async {
@@ -226,7 +205,7 @@ void main() {
       var backend = _getBackend(db: db);
       await backend.close();
 
-      await expectLater(() async => await backend.getKeys(), throwsA(anything));
+      await expectLater(() async => backend.getStore(false), throwsA(anything));
     });
   });
 }

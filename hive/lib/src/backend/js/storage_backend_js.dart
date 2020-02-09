@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:html';
-import 'dart:indexed_db';
 import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
+import 'package:hive/src/backend/js/indexed_db.dart';
 import 'package:hive/src/backend/storage_backend.dart';
 import 'package:hive/src/binary/binary_reader_impl.dart';
 import 'package:hive/src/binary/binary_writer_impl.dart';
@@ -13,6 +13,7 @@ import 'package:meta/meta.dart';
 
 class StorageBackendJs extends StorageBackend {
   static const bytePrefix = [0x90, 0xA9];
+  static const storeName = 'box';
   final Database db;
   final HiveCipher cipher;
 
@@ -42,12 +43,7 @@ class StorageBackendJs extends StorageBackend {
         if (!_isEncoded(value)) {
           return value.buffer;
         }
-      } else if (value is num ||
-          value is bool ||
-          value is String ||
-          value is List<num> ||
-          value is List<bool> ||
-          value is List<String>) {
+      } else if (value is num || value is bool || value is String) {
         return value;
       }
     }
@@ -86,48 +82,25 @@ class StorageBackendJs extends StorageBackend {
     }
   }
 
-  ObjectStore getStore(bool write, [String box = 'box']) {
-    return db
-        .transaction(box, write ? 'readwrite' : 'readonly')
-        .objectStore(box);
-  }
-
-  Future<List<dynamic>> getKeys() {
-    var completer = Completer<List<dynamic>>();
-    var request = getStore(false).getAllKeys(null);
-    request.onSuccess.listen((_) {
-      completer.complete(request.result as List<dynamic>);
-    });
-    request.onError.listen((_) {
-      completer.completeError(request.error);
-    });
-    return completer.future;
-  }
-
-  Future<Iterable<dynamic>> getValues() {
-    var completer = Completer<Iterable<dynamic>>();
-    var request = getStore(false).getAll(null);
-    request.onSuccess.listen((_) {
-      var values = (request.result as List).map(decodeValue);
-      completer.complete(values);
-    });
-    request.onError.listen((_) {
-      completer.completeError(request.error);
-    });
-    return completer.future;
+  @pragma('dart2js:tryInline')
+  @visibleForTesting
+  ObjectStore getStore(bool write) {
+    return db.getStore(storeName, write);
   }
 
   @override
   Future<int> initialize(
       TypeRegistry registry, Keystore keystore, bool lazy) async {
     _registry = registry;
-    var keys = await getKeys();
+    var store = getStore(false);
+    var keys = await store.getAllKeys();
     if (!lazy) {
       var i = 0;
-      var values = await getValues();
+      var values = await store.getAllValues();
       for (var value in values) {
         var key = keys[i++];
-        keystore.insert(Frame(key, value), notify: false);
+        var decoded = decodeValue(value);
+        keystore.insert(Frame(key, decoded), notify: false);
       }
     } else {
       for (var key in keys) {
@@ -140,7 +113,7 @@ class StorageBackendJs extends StorageBackend {
 
   @override
   Future<dynamic> readValue(Frame frame) async {
-    var value = await getStore(false).getObject(frame.key);
+    var value = await getStore(false).get(frame.key);
     return decodeValue(value);
   }
 
@@ -151,7 +124,7 @@ class StorageBackendJs extends StorageBackend {
       if (frame.deleted) {
         await store.delete(frame.key);
       } else {
-        await store.put(encodeValue(frame), frame.key);
+        await store.put(frame.key, encodeValue(frame));
       }
     }
   }
@@ -174,6 +147,6 @@ class StorageBackendJs extends StorageBackend {
 
   @override
   Future<void> deleteFromDisk() {
-    return window.indexedDB.deleteDatabase(db.name);
+    return db.delete();
   }
 }
