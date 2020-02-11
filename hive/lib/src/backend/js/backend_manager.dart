@@ -7,6 +7,10 @@ class BackendManager implements BackendManagerInterface {
   @override
   Future<StorageBackend> open(
       String name, String path, bool crashRecovery, HiveCipher cipher) async {
+    if (!idb2Support) {
+      throw HiveError('Your current browser does not support IndexedDB 2.0. '
+          'Hive requires IndexedDB support to store its data.');
+    }
     var db = await openIDB(name, (db) {
       if (!db.hasObjectStore('box')) {
         db.createObjectStore('box');

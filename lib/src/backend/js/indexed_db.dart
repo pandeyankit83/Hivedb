@@ -5,11 +5,21 @@ import 'dart:async';
 import 'dart:html';
 import 'package:js/js.dart';
 
-@JS('indexedDB.open')
-external _IDBRequest _open(String name);
+@JS('IDBKeyRange')
+class _IDBFactory {
+  @JS()
+  external _IDBRequest open(String name);
 
-@JS('indexedDB.deleteDatabase')
-external _IDBRequest _delete(String name);
+  @JS()
+  external _IDBRequest deleteDatabase(String name);
+}
+
+@JS('IDBKeyRange')
+class _IDBKeyRange {
+  external static _IDBKeyRange lowerBound(int lower);
+
+  external bool includes(dynamic key);
+}
 
 @JS('IDBRequest')
 class _IDBRequest {
@@ -97,7 +107,7 @@ class Database {
 
   @pragma('dart2js:tryInline')
   Future<void> delete() {
-    return _requestToFuture(_delete(name));
+    return _requestToFuture(_indexedDb.deleteDatabase(name));
   }
 }
 
@@ -137,6 +147,20 @@ class ObjectStore {
   }
 }
 
+@JS('indexedDB')
+external _IDBFactory get _indexedDb;
+
+@pragma('dart2js:tryInline')
+bool get idb2Support {
+  if (_indexedDb == null) return false;
+  try {
+    var idb2 = _IDBKeyRange.lowerBound(0).includes(1);
+    return idb2 == true;
+  } catch (e) {
+    return false;
+  }
+}
+
 Future<dynamic> _requestToFuture(_IDBRequest request) {
   var completer = Completer.sync();
   var successCallback = allowInterop((Event e) {
@@ -154,7 +178,7 @@ Future<dynamic> _requestToFuture(_IDBRequest request) {
 @pragma('dart2js:tryInline')
 Future<Database> openIDB(
     String name, void Function(Database) onUpgradeNeeded) async {
-  var request = _open(name);
+  var request = _indexedDb.open(name);
   request.addEventListener('upgradeneeded', allowInterop((e) {
     var db = request.result as _IDBDatabase;
     onUpgradeNeeded(Database(name, db));
