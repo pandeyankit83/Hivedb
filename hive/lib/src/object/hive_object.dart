@@ -48,8 +48,8 @@ abstract class HiveObject {
   /// whether this instance is actually stored in the box.
   bool get isInBox {
     if (_box != null) {
-      if (_box.lazy) {
-        return _box.containsKey(_key);
+      if (_box is LazyBox) {
+        return (_box as LazyBox).containsKey(_key);
       } else {
         return true;
       }

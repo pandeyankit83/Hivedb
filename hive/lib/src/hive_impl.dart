@@ -5,12 +5,15 @@ import 'dart:typed_data';
 import 'package:hive/hive.dart';
 import 'package:hive/src/adapters/big_int_adapter.dart';
 import 'package:hive/src/adapters/date_time_adapter.dart';
+import 'package:hive/src/adapters/duration_adapter.dart';
+import 'package:hive/src/adapters/point_int_adapter.dart';
 import 'package:hive/src/backend/storage_backend_memory.dart';
 import 'package:hive/src/box/box_base_impl.dart';
-import 'package:hive/src/box/box_impl.dart';
 import 'package:hive/src/box/default_compaction_strategy.dart';
 import 'package:hive/src/box/default_key_comparator.dart';
-import 'package:hive/src/box/lazy_box_impl.dart';
+import 'package:hive/src/box/isolate/isolate_box_impl.dart';
+import 'package:hive/src/box/local/box_impl.dart';
+import 'package:hive/src/box/local/lazy_box_impl.dart';
 import 'package:hive/src/util/extensions.dart';
 import 'package:hive/src/registry/type_registry_impl.dart';
 import 'package:meta/meta.dart';
@@ -36,6 +39,7 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
   void _registerDefaultAdapters() {
     registerAdapter(DateTimeAdapter(), internal: true);
     registerAdapter(BigIntAdapter(), internal: true);
+    registerAdapter(DurationAdapter(), internal: true);
   }
 
   @override
@@ -45,118 +49,130 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     _boxes.clear();
   }
 
-  Future<BoxBase<E>> _openBox<E>(
-    String name,
-    bool lazy,
-    HiveCipher cipher,
-    KeyComparator comparator,
-    CompactionStrategy compaction,
-    bool recovery,
-    String path,
-    Uint8List bytes,
-  ) async {
-    assert(comparator != null);
-    assert(compaction != null);
-    assert(path == null || bytes == null);
+  void _checkValidBoxName(String name) {
     assert(name.length <= 255 && name.isAscii,
         'Box names need to be ASCII Strings with a max length of 255.');
-    name = name.toLowerCase();
-    if (isBoxOpen(name)) {
-      if (lazy) {
-        return lazyBox(name);
-      } else {
-        return box(name);
-      }
-    } else {
-      StorageBackend backend;
-      if (bytes != null) {
-        backend = StorageBackendMemory(bytes, cipher);
-      } else {
-        backend = await _manager.open(name, path ?? homePath, recovery, cipher);
-      }
-
-      BoxBaseImpl<E> box;
-      if (lazy) {
-        box = LazyBoxImpl<E>(this, name, comparator, compaction, backend);
-      } else {
-        box = BoxImpl<E>(this, name, comparator, compaction, backend);
-      }
-
-      await box.initialize();
-      _boxes[name] = box;
-
-      return box;
-    }
   }
 
   @override
   Future<Box<E>> openBox<E>(
     String name, {
     HiveCipher encryptionCipher,
-    KeyComparator keyComparator = defaultKeyComparator,
-    CompactionStrategy compactionStrategy = defaultCompactionStrategy,
+    KeyComparator keyComparator = const DefaultKeyComparator(),
+    CompactionStrategy compactionStrategy = const DefaultCompactionStrategy(),
     bool crashRecovery = true,
     String path,
     Uint8List bytes,
-    @deprecated List<int> encryptionKey,
   }) async {
-    if (encryptionKey != null) {
-      encryptionCipher = HiveAesCipher(encryptionKey);
+    _checkValidBoxName(name);
+    if (isBoxOpen(name)) {
+      return box(name);
     }
-    return await _openBox<E>(name, false, encryptionCipher, keyComparator,
-        compactionStrategy, crashRecovery, path, bytes) as Box<E>;
+
+    StorageBackend backend;
+    if (bytes != null) {
+      backend = StorageBackendMemory(bytes, encryptionCipher);
+    } else {
+      backend = await _manager.open(
+          name, path ?? homePath, crashRecovery, encryptionCipher);
+    }
+
+    var newBox =
+        BoxImpl<E>(this, name, keyComparator, compactionStrategy, backend);
+
+    await newBox.initialize();
+    _boxes[name] = newBox;
+
+    return newBox;
   }
 
   @override
   Future<LazyBox<E>> openLazyBox<E>(
     String name, {
     HiveCipher encryptionCipher,
-    KeyComparator keyComparator = defaultKeyComparator,
-    CompactionStrategy compactionStrategy = defaultCompactionStrategy,
+    KeyComparator keyComparator = const DefaultKeyComparator(),
+    CompactionStrategy compactionStrategy = const DefaultCompactionStrategy(),
     bool crashRecovery = true,
     String path,
-    @deprecated List<int> encryptionKey,
   }) async {
-    if (encryptionKey != null) {
-      encryptionCipher = HiveAesCipher(encryptionKey);
+    _checkValidBoxName(name);
+    if (isBoxOpen(name)) {
+      return lazyBox(name);
     }
-    return await _openBox<E>(name, true, encryptionCipher, keyComparator,
-        compactionStrategy, crashRecovery, path, null) as LazyBox<E>;
+
+    var backend = await _manager.open(
+        name, path ?? homePath, crashRecovery, encryptionCipher);
+
+    var newBox =
+        LazyBoxImpl<E>(this, name, keyComparator, compactionStrategy, backend);
+
+    await newBox.initialize();
+    _boxes[name] = newBox;
+
+    return newBox;
   }
 
-  BoxBase<E> getBoxInternal<E>(String name, [bool lazy]) {
-    var lowerCaseName = name.toLowerCase();
-    var box = _boxes[lowerCaseName];
-    if (box != null) {
-      if ((lazy == null || box.lazy == lazy) && box.valueType == E) {
-        return box as BoxBase<E>;
-      } else {
-        var typeName = box is LazyBox
-            ? 'LazyBox<${box.valueType}>'
-            : 'Box<${box.valueType}>';
-        throw HiveError('The box "$lowerCaseName" is already open '
-            'and of type $typeName.');
-      }
-    } else {
-      throw HiveError('Box not found. Did you forget to call Hive.openBox()?');
+  @override
+  Future<IsolateBox<E>> openIsolateBox<E>(
+    String name, {
+    bool lazy = false,
+    HiveCipher encryptionCipher,
+    KeyComparator keyComparator = const DefaultKeyComparator(),
+    CompactionStrategy compactionStrategy = const DefaultCompactionStrategy(),
+    bool crashRecovery = true,
+    String path,
+  }) async {
+    _checkValidBoxName(name);
+    if (isBoxOpen(name)) {
+      return isolateBox<E>(name);
     }
+
+    var newBox = IsolateBoxImpl<E>(this, name, lazy, encryptionCipher,
+        keyComparator, compactionStrategy, crashRecovery, path ?? homePath);
+
+    await newBox.initialize();
+    _boxes[name] = newBox;
+
+    return newBox;
   }
 
   BoxBase getBoxWithoutCheckInternal(String name) {
-    var lowerCaseName = name.toLowerCase();
-    return _boxes[lowerCaseName];
+    return _boxes[name];
+  }
+
+  void _checkBoxType<B>(dynamic box) {
+    if (box == null) {
+      throw HiveError('Box not found. Did you forget to call Hive.openBox()?');
+    } else if (box is! B) {
+      throw HiveError('You are trying to open a $B but the box is '
+          'already open as ${box.runtimeType}.');
+    }
   }
 
   @override
-  Box<E> box<E>(String name) => getBoxInternal<E>(name, false) as Box<E>;
+  Box<E> box<E>(String name) {
+    var box = _boxes[name];
+    _checkBoxType<Box<E>>(box);
+    return box as Box<E>;
+  }
 
   @override
-  LazyBox<E> lazyBox<E>(String name) =>
-      getBoxInternal<E>(name, true) as LazyBox<E>;
+  LazyBox<E> lazyBox<E>(String name) {
+    var box = _boxes[name];
+    _checkBoxType<LazyBox<E>>(box);
+    return box as LazyBox<E>;
+  }
+
+  @override
+  IsolateBox<E> isolateBox<E>(String name) {
+    var box = _boxes[name];
+    _checkBoxType<IsolateBox<E>>(box);
+    return box as IsolateBox<E>;
+  }
 
   @override
   bool isBoxOpen(String name) {
-    return _boxes.containsKey(name.toLowerCase());
+    return _boxes.containsKey(name);
   }
 
   @override
@@ -169,17 +185,16 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
   }
 
   void unregisterBox(String name) {
-    _boxes.remove(name.toLowerCase());
+    _boxes.remove(name);
   }
 
   @override
   Future<void> deleteBoxFromDisk(String name, {String path}) async {
-    var lowerCaseName = name.toLowerCase();
-    var box = _boxes[lowerCaseName];
+    var box = _boxes[name];
     if (box != null) {
       await box.deleteFromDisk();
     } else {
-      await _manager.deleteBox(lowerCaseName, path ?? homePath);
+      await _manager.deleteBox(name, path ?? homePath);
     }
   }
 

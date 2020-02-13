@@ -14,12 +14,11 @@ abstract class HiveInterface implements TypeRegistry {
   Future<Box<E>> openBox<E>(
     String name, {
     HiveCipher encryptionCipher,
-    KeyComparator keyComparator = defaultKeyComparator,
-    CompactionStrategy compactionStrategy = defaultCompactionStrategy,
+    KeyComparator keyComparator,
+    CompactionStrategy compactionStrategy,
     bool crashRecovery = true,
     String path,
     Uint8List bytes,
-    @deprecated List<int> encryptionKey,
   });
 
   /// Opens a lazy box.
@@ -29,11 +28,20 @@ abstract class HiveInterface implements TypeRegistry {
   Future<LazyBox<E>> openLazyBox<E>(
     String name, {
     HiveCipher encryptionCipher,
-    KeyComparator keyComparator = defaultKeyComparator,
-    CompactionStrategy compactionStrategy = defaultCompactionStrategy,
+    KeyComparator keyComparator,
+    CompactionStrategy compactionStrategy,
     bool crashRecovery = true,
     String path,
-    @deprecated List<int> encryptionKey,
+  });
+
+  Future<IsolateBox<E>> openIsolateBox<E>(
+    String name, {
+    bool lazy = false,
+    HiveCipher encryptionCipher,
+    KeyComparator keyComparator,
+    CompactionStrategy compactionStrategy,
+    bool crashRecovery = true,
+    String path,
   });
 
   /// Returns a previously opened box.
@@ -41,6 +49,8 @@ abstract class HiveInterface implements TypeRegistry {
 
   /// Returns a previously opened lazy box.
   LazyBox<E> lazyBox<E>(String name);
+
+  IsolateBox<E> isolateBox<E>(String name);
 
   /// Checks if a specific box is currently open.
   bool isBoxOpen(String name);
@@ -59,8 +69,10 @@ abstract class HiveInterface implements TypeRegistry {
   List<int> generateSecureKey();
 }
 
-///
-typedef KeyComparator = int Function(dynamic key1, dynamic key2);
+abstract class KeyComparator {
+  int compareKeys(dynamic key1, dynamic key2);
+}
 
-/// A function which decides when to compact a box.
-typedef CompactionStrategy = bool Function(int entries, int deletedEntries);
+abstract class CompactionStrategy {
+  bool shouldCompact(int entries, int deletedEntries);
+}

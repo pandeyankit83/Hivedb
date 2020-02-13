@@ -33,13 +33,14 @@ class Keystore<E> {
   var _autoIncrement = -1;
 
   Keystore(this._box, this._notifier, KeyComparator keyComparator)
-      : _store = IndexableSkipList(keyComparator ?? defaultKeyComparator);
+      : _store = IndexableSkipList(
+            keyComparator.compareKeys ?? defaultKeyComparator.compareKeys);
 
   factory Keystore.debug({
     Iterable<Frame> frames = const [],
     BoxBase<E> box,
     ChangeNotifier notifier,
-    KeyComparator keyComparator = defaultKeyComparator,
+    KeyComparator keyComparator,
   }) {
     var keystore =
         Keystore<E>(box, notifier ?? ChangeNotifier(), keyComparator);

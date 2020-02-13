@@ -1,7 +1,14 @@
-const _deletedRatio = 0.15;
-const _deletedThreshold = 60;
+import 'package:hive/hive.dart';
 
-bool defaultCompactionStrategy(int entries, int deletedEntries) {
-  return deletedEntries > _deletedThreshold &&
-      deletedEntries / entries > _deletedRatio;
+class DefaultCompactionStrategy implements CompactionStrategy {
+  static const _deletedRatio = 0.15;
+  static const _deletedThreshold = 60;
+
+  const DefaultCompactionStrategy();
+
+  @override
+  bool shouldCompact(int entries, int deletedEntries) {
+    return deletedEntries > _deletedThreshold &&
+        deletedEntries / entries > _deletedRatio;
+  }
 }

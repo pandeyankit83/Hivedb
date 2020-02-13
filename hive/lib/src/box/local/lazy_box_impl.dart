@@ -4,11 +4,11 @@
 import 'package:hive/hive.dart';
 import 'package:hive/src/backend/storage_backend.dart';
 import 'package:hive/src/binary/frame.dart';
-import 'package:hive/src/box/box_base_impl.dart';
+import 'package:hive/src/box/local/local_box_base_impl.dart';
 import 'package:hive/src/object/hive_object.dart';
 import 'package:hive/src/hive_impl.dart';
 
-class LazyBoxImpl<E> extends BoxBaseImpl<E> implements LazyBox<E> {
+class LazyBoxImpl<E> extends LocalBoxBaseImpl<E> implements LazyBox<E> {
   LazyBoxImpl(
     HiveImpl hive,
     String name,
@@ -18,7 +18,7 @@ class LazyBoxImpl<E> extends BoxBaseImpl<E> implements LazyBox<E> {
   ) : super(hive, name, keyComparator, compactionStrategy, backend);
 
   @override
-  final bool lazy = true;
+  final bool isLazy = true;
 
   @override
   Future<E> get(dynamic key, {E defaultValue}) async {
@@ -43,12 +43,22 @@ class LazyBoxImpl<E> extends BoxBaseImpl<E> implements LazyBox<E> {
   }
 
   @override
-  Future<void> putAll(Map<dynamic, dynamic> kvPairs) async {
+  Future<void> putAll(Map<dynamic, dynamic> entries,
+      {Iterable<dynamic> keysToDelete}) async {
     checkOpen();
 
     var frames = <Frame>[];
-    for (var key in kvPairs.keys) {
-      frames.add(Frame(key, kvPairs[key]));
+
+    if (keysToDelete != null) {
+      for (var key in keysToDelete) {
+        if (keystore.containsKey(key)) {
+          frames.add(Frame.deleted(key));
+        }
+      }
+    }
+
+    for (var key in entries.keys) {
+      frames.add(Frame(key, entries[key]));
       if (key is int) {
         keystore.updateAutoIncrement(key);
       }
@@ -58,31 +68,14 @@ class LazyBoxImpl<E> extends BoxBaseImpl<E> implements LazyBox<E> {
     await backend.writeFrames(frames);
 
     for (var frame in frames) {
-      if (frame.value is HiveObject) {
-        (frame.value as HiveObject).init(frame.key, this);
+      if (frame.deleted) {
+        keystore.insert(frame);
+      } else {
+        if (frame.value is HiveObject) {
+          (frame.value as HiveObject).init(frame.key, this);
+        }
+        keystore.insert(frame.toLazy());
       }
-      keystore.insert(frame.toLazy());
-    }
-
-    await performCompactionIfNeeded();
-  }
-
-  @override
-  Future<void> deleteAll(Iterable<dynamic> keys) async {
-    checkOpen();
-
-    var frames = <Frame>[];
-    for (var key in keys) {
-      if (keystore.containsKey(key)) {
-        frames.add(Frame.deleted(key));
-      }
-    }
-
-    if (frames.isEmpty) return;
-    await backend.writeFrames(frames);
-
-    for (var frame in frames) {
-      keystore.insert(frame);
     }
 
     await performCompactionIfNeeded();

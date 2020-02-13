@@ -10,7 +10,7 @@ part of hive;
 ///
 /// Read operations for normal boxes are asynchronous (the entries are in
 /// memory). Lazy boxes have asynchronous read operations.
-abstract class Box<E> implements BoxBase<E> {
+abstract class Box<E> implements LocalBoxBase<E> {
   /// All the values in the box.
   ///
   /// The values are in the same order as their keys.

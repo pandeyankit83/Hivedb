@@ -42,33 +42,15 @@ abstract class BoxBase<E> {
   /// Whether this box is lazy or not.
   ///
   /// This is equivalent to `box is LazyBox`.
-  bool get lazy;
+  bool get isLazy;
 
-  /// All the keys in the box.
-  ///
-  /// The keys are sorted alphabetically in ascending order.
-  Iterable<dynamic> get keys;
-
-  /// The number of entries in the box.
-  int get length;
-
-  /// Returns `true` if there are no entries in this box.
-  bool get isEmpty;
-
-  /// Returns true if there is at least one entries in this box.
-  bool get isNotEmpty;
-
-  /// Get the n-th key in the box.
-  dynamic keyAt(int index);
+  bool get isIsolate;
 
   /// Returns a broadcast stream of change events.
   ///
   /// If the [key] parameter is provided, only events for the specified key are
   /// broadcasted.
   Stream<BoxEvent> watch({dynamic key});
-
-  /// Checks whether the box contains the [key].
-  bool containsKey(dynamic key);
 
   /// Saves the [key] - [value] pair.
   Future<void> put(dynamic key, E value);
@@ -78,13 +60,14 @@ abstract class BoxBase<E> {
   Future<void> putAt(int index, E value);
 
   /// Saves all the key - value pairs in the [entries] map.
-  Future<void> putAll(Map<dynamic, E> entries);
+  Future<void> putAll(Map<dynamic, E> entries,
+      {Iterable<dynamic> keysToDelete});
 
   /// Saves the [value] with an auto-increment key.
-  Future<int> add(E value);
+  Future<void> add(E value);
 
   /// Saves all the [values] with auto-increment keys.
-  Future<Iterable<int>> addAll(Iterable<E> values);
+  Future<void> addAll(Iterable<E> values);
 
   /// Deletes the given [key] from the box.
   ///
