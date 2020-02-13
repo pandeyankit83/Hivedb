@@ -1,9 +1,25 @@
 part of hive_object_internal;
 
 extension HiveObjectInternal on HiveObject {
+  int get typeId {
+    return _typeId;
+  }
+
+  set typeId(int id) {
+    _typeId = id;
+  }
+
+  TypeAdapter get typeAdapter {
+    return _typeAdapter;
+  }
+
+  set typeAdapter(TypeAdapter adapter) {
+    _typeAdapter = adapter;
+  }
+
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void init(dynamic key, BoxBase box) {
+  void init(dynamic key, BoxBaseImpl box) {
     if (_box != null) {
       if (_box != box) {
         throw HiveError('The same instance of an HiveObject cannot '
@@ -19,7 +35,7 @@ extension HiveObjectInternal on HiveObject {
 
   void dispose() {
     for (var list in _hiveLists.keys) {
-      (list as HiveListImpl).invalidate();
+      list.invalidate();
     }
 
     _hiveLists.clear();

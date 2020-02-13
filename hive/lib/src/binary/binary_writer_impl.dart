@@ -4,7 +4,8 @@ import 'dart:typed_data';
 import 'package:hive/hive.dart';
 import 'package:hive/src/binary/frame.dart';
 import 'package:hive/src/crypto/crc32.dart';
-import 'package:hive/src/object/hive_list_impl.dart';
+import 'package:hive/src/object/hive_list.dart';
+import 'package:hive/src/object/hive_object.dart';
 import 'package:hive/src/registry/type_registry_impl.dart';
 import 'package:hive/src/util/extensions.dart';
 import 'package:meta/meta.dart';
@@ -229,7 +230,7 @@ class BinaryWriterImpl extends BinaryWriter {
     if (writeLength) {
       writeUint32(list.length);
     }
-    var boxName = (list as HiveListImpl).boxName;
+    var boxName = list.boxName;
     writeByte(boxName.length);
     _addBytes(boxName.codeUnits);
     for (var obj in list) {
@@ -299,6 +300,11 @@ class BinaryWriterImpl extends BinaryWriter {
         writeByte(FrameValueType.mapT);
       }
       writeMap(value);
+    } else if (value is HiveObject) {
+      if (writeTypeId) {
+        writeByte(value.typeId);
+      }
+      value.typeAdapter.write(this, value);
     } else {
       var resolved = typeRegistry.findAdapterForValue(value);
       if (resolved == null) {

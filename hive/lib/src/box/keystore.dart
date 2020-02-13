@@ -11,6 +11,8 @@ import 'package:hive/src/object/hive_object.dart';
 import 'package:hive/src/util/indexable_skip_list.dart';
 import 'package:meta/meta.dart';
 
+import 'box_base_impl.dart';
+
 class KeyTransaction<E> {
   final List<dynamic> added = [];
   final Map<dynamic, Frame> deleted = HashMap();
@@ -20,7 +22,7 @@ class KeyTransaction<E> {
 }
 
 class Keystore<E> {
-  final BoxBase<E> _box;
+  final BoxBaseImpl<E> _box;
 
   final ChangeNotifier _notifier;
 
@@ -38,7 +40,7 @@ class Keystore<E> {
 
   factory Keystore.debug({
     Iterable<Frame> frames = const [],
-    BoxBase<E> box,
+    BoxBaseImpl<E> box,
     ChangeNotifier notifier,
     KeyComparator keyComparator,
   }) {

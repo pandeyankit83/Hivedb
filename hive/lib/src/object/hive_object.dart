@@ -1,17 +1,24 @@
 library hive_object_internal;
 
+import 'dart:async';
+
 import 'package:hive/hive.dart';
 import 'package:meta/meta.dart';
-import 'package:hive/src/object/hive_list_impl.dart';
+import 'package:hive/src/box/box_base_impl.dart';
+import 'package:hive/src/object/hive_list.dart';
 
 part 'hive_object_internal.dart';
 
 /// Extend `HiveObject` to add useful methods to the objects you want to store
 /// in Hive
 abstract class HiveObject {
-  BoxBase _box;
+  BoxBaseImpl _box;
 
   dynamic _key;
+
+  int _typeId;
+
+  TypeAdapter _typeAdapter;
 
   // HiveLists containing this object
   final _hiveLists = <HiveList, int>{};
@@ -34,6 +41,25 @@ abstract class HiveObject {
   Future<void> save() {
     _requireInitialized();
     return _box.put(_key, this);
+  }
+
+  void scheduleSave() {
+    _requireInitialized();
+
+    if (_box.objectsToSave.isEmpty) {
+      scheduleMicrotask(() {
+        var map = <dynamic, HiveObject>{};
+        for (var obj in _box.objectsToSave) {
+          if (obj._box == _box) {
+            map[obj._key] = obj;
+          }
+        }
+        _box.objectsToSave.clear();
+        box.putAll(map);
+      });
+    }
+
+    _box.objectsToSave.add(this);
   }
 
   /// Deletes this object from the box it is stored in.

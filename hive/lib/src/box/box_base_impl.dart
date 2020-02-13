@@ -8,6 +8,8 @@ abstract class BoxBaseImpl<E> implements BoxBase<E> {
 
   final HiveImpl hive;
 
+  final Set<HiveObject> objectsToSave = {};
+
   var _open = true;
 
   BoxBaseImpl(this.hive, this.name);

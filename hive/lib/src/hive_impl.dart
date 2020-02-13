@@ -6,7 +6,6 @@ import 'package:hive/hive.dart';
 import 'package:hive/src/adapters/big_int_adapter.dart';
 import 'package:hive/src/adapters/date_time_adapter.dart';
 import 'package:hive/src/adapters/duration_adapter.dart';
-import 'package:hive/src/adapters/point_int_adapter.dart';
 import 'package:hive/src/backend/storage_backend_memory.dart';
 import 'package:hive/src/box/box_base_impl.dart';
 import 'package:hive/src/box/default_compaction_strategy.dart';

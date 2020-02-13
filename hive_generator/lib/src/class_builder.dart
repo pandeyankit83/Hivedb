@@ -9,7 +9,6 @@ import 'package:source_gen/source_gen.dart';
 import 'package:dartx/dartx.dart';
 
 class ClassBuilder extends Builder {
-  var hiveListChecker = const TypeChecker.fromRuntime(HiveList);
   var listChecker = const TypeChecker.fromRuntime(List);
   var mapChecker = const TypeChecker.fromRuntime(Map);
   var setChecker = const TypeChecker.fromRuntime(Set);

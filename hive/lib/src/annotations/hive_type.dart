@@ -8,15 +8,20 @@ class HiveType {
   /// The name of the generated adapter.
   final String adapterName;
 
+  /// Auto-updating objects will persist changes automatically. Each time you
+  /// use a setter, the object is scheduled to be persisted.
+  final bool autoUpdate;
+
   /// This parameter can be used to keep track of old fieldIds which must not
   /// be reused. The generator will throw an error if a legacy fieldId is
   /// used again.
-  // final List<int> legacyFieldIds;
+  final Set<int> legacyFieldIds;
 
   /// If [adapterName] is not set, it'll be `"YourClass" + "Adapter"`.
   const HiveType({
     @required this.typeId,
     this.adapterName,
-    //this.legacyFieldIds,
+    this.autoUpdate = false,
+    this.legacyFieldIds = const {},
   });
 }

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:hive/hive.dart';
 import 'package:hive/src/binary/frame.dart';
 import 'package:hive/src/crypto/crc32.dart';
-import 'package:hive/src/object/hive_list_impl.dart';
+import 'package:hive/src/object/hive_list.dart';
 import 'package:hive/src/registry/type_registry_impl.dart';
 import 'package:hive/src/util/extensions.dart';
 
@@ -233,7 +233,7 @@ class BinaryReaderImpl extends BinaryReader {
       keys[i] = readKey();
     }
 
-    return HiveListImpl.lazy(boxName, keys);
+    return HiveList.lazy(boxName, keys);
   }
 
   Frame readFrame({HiveCipher cipher, bool lazy = false, int frameOffset}) {
