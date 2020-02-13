@@ -21,6 +21,8 @@ abstract class IsolateBox<E> extends BoxBase<E> {
   /// Checks whether the box contains the [key].
   Future<bool> containsKey(dynamic key);
 
+  Future<int> autoIncrement();
+
   /// All the values in the box.
   ///
   /// The values are in the same order as their keys.

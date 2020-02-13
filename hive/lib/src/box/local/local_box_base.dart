@@ -20,4 +20,6 @@ abstract class LocalBoxBase<E> extends BoxBase<E> {
 
   /// Checks whether the box contains the [key].
   bool containsKey(dynamic key);
+
+  int autoIncrement();
 }

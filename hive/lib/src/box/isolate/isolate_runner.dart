@@ -16,7 +16,7 @@ typedef IsolateOperation = Future<dynamic> Function(
 class IsolateRunner {
   static const List<IsolateOperation> operations = [
     //
-    getLength, getKeys, keyAt, containsKey, getValues,
+    getLength, getKeys, keyAt, containsKey, autoIncrement, getValues,
     valuesBetween, watch, get, getAt, toMap, putAt, putAll, addAll,
     deleteAt, compact, clear, close, deleteFromDisk
   ];
@@ -65,11 +65,11 @@ class IsolateRunner {
     return Hive.openBox('name', path: Directory.current.path);
   }
 
-  static Future<dynamic> getLength(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> getLength(LocalBoxBase box, void _) {
     return Future.value(box.length);
   }
 
-  static Future<dynamic> getKeys(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> getKeys(LocalBoxBase box, void _) {
     return Future.value(box.keys);
   }
 
@@ -81,7 +81,11 @@ class IsolateRunner {
     return Future.value(box.containsKey(key));
   }
 
-  static Future<dynamic> getValues(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> autoIncrement(LocalBoxBase box, void _) {
+    return Future.value(box.autoIncrement());
+  }
+
+  static Future<dynamic> getValues(LocalBoxBase box, void _) {
     return Future.value((box as Box).values.toList());
   }
 
@@ -124,7 +128,7 @@ class IsolateRunner {
     }
   }
 
-  static Future<dynamic> toMap(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> toMap(LocalBoxBase box, void _) {
     return Future.value((box as Box).toMap());
   }
 
@@ -144,19 +148,19 @@ class IsolateRunner {
     return box.deleteAt(index as int);
   }
 
-  static Future<dynamic> compact(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> compact(LocalBoxBase box, void _) {
     return box.compact();
   }
 
-  static Future<dynamic> clear(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> clear(LocalBoxBase box, void _) {
     return box.clear();
   }
 
-  static Future<dynamic> close(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> close(LocalBoxBase box, void _) {
     return box.close();
   }
 
-  static Future<dynamic> deleteFromDisk(LocalBoxBase box, dynamic _) {
+  static Future<dynamic> deleteFromDisk(LocalBoxBase box, void _) {
     return box.deleteFromDisk();
   }
 }

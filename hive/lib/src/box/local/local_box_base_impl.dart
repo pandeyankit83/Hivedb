@@ -75,6 +75,12 @@ abstract class LocalBoxBaseImpl<E> extends BoxBaseImpl<E>
   }
 
   @override
+  int autoIncrement() {
+    checkOpen();
+    return keystore.autoIncrement();
+  }
+
+  @override
   Future<void> addAll(Iterable<E> values) {
     return putAll({
       for (var value in values) keystore.autoIncrement(): value,

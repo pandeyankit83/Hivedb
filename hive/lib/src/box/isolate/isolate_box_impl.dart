@@ -90,6 +90,12 @@ class IsolateBoxImpl<E> extends BoxBaseImpl<E> implements IsolateBox<E> {
   }
 
   @override
+  Future<int> autoIncrement() async {
+    var autoIncrement = await _sendRequest(IsolateRunner.autoIncrement);
+    return autoIncrement as int;
+  }
+
+  @override
   Future<Iterable<E>> get values async {
     _checkNonLazyForMultiValueAccess();
     var values = await _sendRequest(IsolateRunner.getValues);
