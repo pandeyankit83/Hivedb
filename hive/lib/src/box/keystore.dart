@@ -52,20 +52,32 @@ class Keystore<E> {
     return keystore;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   int get deletedEntries => _deletedEntries;
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   int get length => _store.length;
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   Iterable<Frame> get frames => _store.values;
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void resetDeletedEntries() {
     _deletedEntries = 0;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   int autoIncrement() {
     return ++_autoIncrement;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void updateAutoIncrement(int key) {
     if (key > _autoIncrement) {
       _autoIncrement = key;

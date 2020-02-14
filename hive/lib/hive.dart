@@ -32,10 +32,10 @@ part 'src/box/box_base.dart';
 part 'src/crypto/hive_aes_cipher.dart';
 part 'src/crypto/hive_cipher.dart';
 part 'src/object/hive_collection_extension.dart';
-part 'src/query/hive_query_async.dart';
+/*part 'src/query/hive_query_async.dart';
 part 'src/query/hive_query_base.dart';
 part 'src/query/hive_query.dart';
-part 'src/query/hive_results.dart';
+part 'src/query/hive_results.dart';*/
 part 'src/registry/type_registry.dart';
 part 'src/registry/type_adapter.dart';
 part 'src/hive_error.dart';

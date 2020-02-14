@@ -31,10 +31,13 @@ class IsolateRunner {
 
   LocalBoxBase _box;
 
-  Future<dynamic> handleRequest(int operationId, dynamic data) async {
+  Future<dynamic> handleRequest(int operationId, dynamic data) {
     if (operationId == -1) {
       assert(_box == null);
-      _box = await initialize(data);
+      return initialize(data).then((box) {
+        _box = box;
+        return null;
+      });
     } else {
       var operation = operations[operationId];
       return operation(_box, data);
